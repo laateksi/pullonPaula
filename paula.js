@@ -21,7 +21,8 @@ var toimarit = [
     "Masse",
     "Ville",
     "Burri",
-    "Ville2"
+    "Suoraniemi",
+    "Antti"
     ]
 
 // Bot waiting for messages
@@ -44,7 +45,7 @@ bot.on('message', function(message) {
 
 //-----------------------------------------------------------
 //Scrape pna
-var day = new Date();
+    var day = new Date();
     var CurrentDay = day.getDay(); 
     url = 'http://www.pna.fi/tty/'+ CurrentDay + '.html?' ;
 
