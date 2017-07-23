@@ -1,11 +1,12 @@
 // telegramBot; to help with the daily life
 
 //"use strict";
+//Auth Ids
 
 var VowTelegramBot = require('vow-telegram-bot'),
     bot = new VowTelegramBot({
         //your bot token given by the botfather
-        token: '199870556:AAH18MW-QI54Mwj13YCfvyyIcMsNsbi_nFo',
+        token: token,
         polling: {
             timeout: 3,
             limit: 100
@@ -15,9 +16,9 @@ var VowTelegramBot = require('vow-telegram-bot'),
 // request and cheerio for web scraping
 var request = require('request');
 var cheerio = require('cheerio');
+var fs = require('fs');
 
-
-//Object
+//Expenses properties
 var expenseList = [];
 function addExpense(amount, reason) {
     console.log("Lisätään");
@@ -25,18 +26,46 @@ function addExpense(amount, reason) {
         amount : amount,
         reason : reason
     }
-    expenseList.push(expense);
-    console.log("Lisättiin:" + amount + " - " + reason);
+    try {
+    //empty expenses
+        while (expenseList.length > 0) {
+        a.pop();
+        }
+        var expenseJson = JSON.stringify(expense);
+        var array = expenseList.push(expenseJson);
+        console.log("---------------------- " + typeof expenseList);
+        var JsonArray = JSON.stringify(array)
+        console.log("---------------------- " + JsonArray);
+        //write to a file  -> commented for debugging
+        fs.appendFile("maksut.json", expenseJson);
+        console.log("Lisättiin:" + amount + " - " + reason)
+    } catch (err) { return err}
 }
 
+var commands = [
+    "apua - Show list of available commands",
+    "lisää - /lisää <amount> <reason>",
+    "maksut - /maksut <param>",
+    "joku",
+    "newton",
+    "fusari",
+    "såås",
+    "hertsi",
+    "reaktori",
+    "raflat"
+]
 // List of out club members
 var toimarit = [
     "Jori",
     "Joonas",
     "Masse",
     "Ville",
+    "Konsta",
+    "Miro",
+    "Antti",
+    "Mikko",
     "Burri",
-    "Ville2"
+    "Takapää Ville"
     ]
 
 function validateAndAdd(msg) {
@@ -68,6 +97,29 @@ function validateAndAdd(msg) {
     }
 }
 
+function readFile(parameter) {
+    if (parameter.includes("maksut")) {
+        fs.readFile("maksut.txt", 'utf8', (err, data) => {
+            if (err) throw err;
+            console.log(data);
+            console.log(typeof data);
+            var maksutText = JSON.parse(data);
+            console.log("----");
+            console.log(maksutText);
+            console.log(typeof maksutText);
+            console.log("-----------"+ maksutText.amount);
+        });
+        
+    
+    }
+}
+
+function authentication(Id) {
+    if (Id == LauriId) {
+        return true
+    } else { return false}
+}
+
 function getExpenses(msg) {
 
     // TODO: msg wirh different parameters
@@ -80,7 +132,7 @@ function getExpenses(msg) {
             if (parts[1] == undefined) {
                 var listLenght = expenseList.length; 
                 console.log(listLenght);
-                if(expenseList.length == 0) { throw "Empty" 
+                if(expenseList.length == 0) { readFile(parts[0]);
                 } else {
                     for (var item in expenseList) {
                         reply = reply + expenseList[item].amount+ " - " + expenseList[item].reason + "\n";
@@ -98,7 +150,7 @@ function getExpenses(msg) {
                     }
                 }
             }
-            return reply + "  -- \nTotal: " + total;
+            return reply + "  -- \nTotal: " + total.toFixed(2);
         }
     } catch (err) {
         console.log(err);
@@ -113,13 +165,26 @@ bot.on('message', function(message) {
       var msg = message.text;
       console.log("Viesti oli: "+ msg);
       console.log(from);
+      console.log(message.chat);
+      console.log(message.chat.id);
       msg = msg.toLowerCase();
 
-      if(msg[0] == '/') {
+      var joku = msg.search('joku');
+      if(joku != -1) {
+            var num = Math.floor(Math.random() * 6); //return num between 0-10
+
+            bot.sendMessage({
+                chat_id: message.chat.id,
+                text: "Hetkinen, hetkinen... joku eli " + toimarit[num]
+            })
+      }
+
+      
+      else if(msg[0] == '/') {
         //init the words bot is waiting
+        var apua = msg.search("/apua");
         var lisaa = msg.search('/lisää');
         var maksut = msg.search('/maksut');
-        var joku = msg.search('joku');
         var newton = msg.search('/newton');
         var fusari = msg.search('/fusari');
         var såås = msg.search('/såås');
@@ -127,39 +192,52 @@ bot.on('message', function(message) {
         var reaktori = msg.search('/reaktori');
         var rafla = msg.search('/ruokaa');
         
-        if(maksut != -1) {
-            try {
-               var reply = getExpenses(msg);
+       
+            if(maksut != -1) {
+                try {
+                    if (!authentication(message.chat.id)) {throw "Auth error"}
+                    var reply = getExpenses(msg);
+                    
+                    bot.sendMessage({
+                        chat_id: message.chat.id,
+                        text: reply
+                    })
+            } catch(error) {
+                console.log(error);
+                bot.sendMessage({
+                        chat_id: message.chat.id,
+                        text: error
+                    })
+            }
+            } else if (lisaa != -1){
+                try {
+                    if (!authentication(message.chat.id)) {throw "Auth error"}
+                    var reply = validateAndAdd(msg)
+                    bot.sendMessage({
+                        chat_id: message.chat.id,
+                        text: reply
+                    })
+            } catch(error) {
                 
+                console.log(error);
+                bot.sendMessage({
+                        chat_id: message.chat.id,
+                        text: error
+                    })
+            }
+                //List all available commands
+            } else if (apua != -1) {
+                var reply = "Paula:\n";
+                for (var item in commands) {
+                    reply = reply + commands[item] + "\n";
+                }
                 bot.sendMessage({
                     chat_id: message.chat.id,
                     text: reply
                 })
-        } catch(error) {
-            console.log(error);
-            bot.sendMessage({
-                    chat_id: message.chat.id,
-                    text: error
-                })
         }
-        } else if (lisaa != -1){
-            try {
-                
-                var reply = validateAndAdd(msg)
-                bot.sendMessage({
-                    chat_id: message.chat.id,
-                    text: reply
-                })
-        } catch(error) {
-            
-            console.log(error);
-            bot.sendMessage({
-                    chat_id: message.chat.id,
-                    text: error
-                })
-        }
-        }
-}})
+    }
+})
 
 
 //-----------------------------------------------------------
@@ -264,16 +342,4 @@ var day = new Date();
           })
       }
 // -----------------------------------------------------------------
-// if message was 'joku' determine who is going to do the chores
-
-
-      if(joku != -1) {
-          var num = Math.floor(Math.random() * 6); //return num between 0-10
-
-          bot.sendMessage({
-            chat_id: message.chat.id,
-            text: "Hetkinen, hetkinen... joku eli " + toimarit[num]
-          })
-        }
-    }
 })})*/
