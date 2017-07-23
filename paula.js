@@ -106,25 +106,6 @@ function getExpenses(msg) {
     }
 }
 
-        /*  
-        if(command.length < 2) { throw "Syntaksi"}
-                if(command.length > 3) { throw "Syntaksi"}
-                var number = expenseList.length +1;
-                console.log("Lisätään: " + number);
-                console.log(typeof command[1]);
-                amount = parseFloat(command[1])
-                console.log(typeof amount);
-                if(amount = "NaN") { throw "Summan pitää olla luku"
-                } else {
-                    if(command.length == 3) {
-                        var expense = command[2];
-                    } else {
-                        var expense = " - ";
-                    }
-                }
-
-                addExpense(amount, expense);*/
-
 
 // Bot waiting for messages
 bot.on('message', function(message) {
