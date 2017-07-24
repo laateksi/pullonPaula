@@ -2,11 +2,13 @@
 
 //"use strict";
 //Auth Ids
+var LauriId = 151674286;
+var tokenId = '199870556:AAH18MW-QI54Mwj13YCfvyyIcMsNsbi_nFo';
 
 var VowTelegramBot = require('vow-telegram-bot'),
     bot = new VowTelegramBot({
         //your bot token given by the botfather
-        token: token,
+        token: tokenId,
         polling: {
             timeout: 3,
             limit: 100
@@ -22,30 +24,44 @@ var fs = require('fs');
 var expenseList = [];
 function addExpense(amount, reason) {
     console.log("Lisätään");
+    var moment = new Date();
+    moment = "<" + moment.getUTCFullYear() + "/" + moment.getUTCMonth() + "/" +  
+                   moment.getUTCDate() + " - " + moment.getUTCHours() + ":" + 
+                   moment.getUTCMinutes() + ":" + moment.getUTCSeconds() + ">";
     var expense = {
+        moment : moment,
         amount : amount,
         reason : reason
     }
     try {
     //empty expenses
-        while (expenseList.length > 0) {
-        a.pop();
-        }
-        var expenseJson = JSON.stringify(expense);
-        var array = expenseList.push(expenseJson);
-        console.log("---------------------- " + typeof expenseList);
-        var JsonArray = JSON.stringify(array)
-        console.log("---------------------- " + JsonArray);
-        //write to a file  -> commented for debugging
-        fs.appendFile("maksut.json", expenseJson);
-        console.log("Lisättiin:" + amount + " - " + reason)
+        expenseList.push(expense);
+        //fs.appendFile(month + ".json", JSON.stringify(expenseList));
+        
     } catch (err) { return err}
+}
+
+//Notes
+var noteList = [];
+function addNote(note) 
+{
+    var noteParts = note.split(" ");
+    var finalNote = "";
+    for (var item in noteParts) {
+        if (noteParts[item] == noteParts[0]) {}
+        else {finalNote = finalNote + noteParts[item] + " "}
+    }
+    noteList.push(finalNote);
+    console.log("lisätty listaan");
 }
 
 var commands = [
     "apua - Show list of available commands",
     "lisää - /lisää <amount> <reason>",
     "maksut - /maksut <param>",
+    "listaa",
+    "note",
+    "tyhjennä",
     "joku",
     "newton",
     "fusari",
@@ -127,24 +143,20 @@ function getExpenses(msg) {
         var parts = msg.split(" ");
         if (parts.length > 2) { throw "Syntax: /maksut <param>"
         } else {
+            if(expenseList.length == 0) { throw "Empty" }//readFile(parts[0]);
             var reply = "Expenses:\n";
             var total = 0;
             if (parts[1] == undefined) {
-                var listLenght = expenseList.length; 
-                console.log(listLenght);
-                if(expenseList.length == 0) { readFile(parts[0]);
-                } else {
-                    for (var item in expenseList) {
-                        reply = reply + expenseList[item].amount+ " - " + expenseList[item].reason + "\n";
-                        var lineAmount = parseFloat(expenseList[item].amount);
-                        total = +total + +lineAmount.toFixed(2);
-                    }
+                for (var item in expenseList) {
+                    reply = reply + expenseList[item].moment + "    " + expenseList[item].amount+ " - " + expenseList[item].reason + "\n";
+                    var lineAmount = parseFloat(expenseList[item].amount);
+                    total = +total + +lineAmount.toFixed(2);
                 }
             } else {
                 var searchParam = parts [1];
                 for (var item in expenseList) {
                     if (expenseList[item].reason == searchParam) {
-                        reply = reply + expenseList[item].amount+ " - " + expenseList[item].reason + "\n";
+                        reply = reply + expenseList[item].moment + "    " + expenseList[item].amount+ " - " + expenseList[item].reason + "\n";
                         var lineAmount = parseFloat(expenseList[item].amount);
                         total = (+total + +lineAmount).toFixed(2);
                     }
@@ -158,7 +170,20 @@ function getExpenses(msg) {
     }
 }
 
+function getNotes() 
+{
+    var replyNote = "";
+    for (var item in noteList) {
+        replyNote = replyNote + noteList[item] + "\n";
+    }
+    return replyNote;
+}
 
+function tyhjaa () 
+{
+    while(noteList.length) { noteList.pop();  }   
+    return "Tyhjennetty"
+}
 // Bot waiting for messages
 bot.on('message', function(message) {
       var from = message.from;
@@ -178,10 +203,12 @@ bot.on('message', function(message) {
                 text: "Hetkinen, hetkinen... joku eli " + toimarit[num]
             })
       }
-
       
       else if(msg[0] == '/') {
         //init the words bot is waiting
+        var tyhjenna = msg.search("/tyhjennä");
+        var listaa = msg.search("/listaa");
+        var note = msg.search("/note");
         var apua = msg.search("/apua");
         var lisaa = msg.search('/lisää');
         var maksut = msg.search('/maksut');
@@ -192,7 +219,58 @@ bot.on('message', function(message) {
         var reaktori = msg.search('/reaktori');
         var rafla = msg.search('/ruokaa');
         
-       
+            if(note != -1) {
+                try {
+                    if (!authentication(message.chat.id)) {throw "Auth error"}
+                    
+                    addNote(msg);
+                    
+                } catch(error) {
+                    console.log(error);
+                    bot.sendMessage({
+                        chat_id: message.chat.id,
+                        text: error
+                    })
+                }
+            }
+
+            if(tyhjenna != -1) {
+                try {
+                    if (!authentication(message.chat.id)) {throw "Auth error"}
+                    
+                    var reply = tyhjaa();
+                    bot.sendMessage({
+                        chat_id: message.chat.id,
+                        text: reply
+                    })
+
+                } catch(error) {
+                    console.log(error);
+                    bot.sendMessage({
+                        chat_id: message.chat.id,
+                        text: "Lista Tyhjennetty"
+                    })
+                }
+            }
+
+            if(listaa != -1) {
+                try {
+                    if (!authentication(message.chat.id)) {throw "Auth error"}
+                    var reply = getNotes(msg);
+                    
+                    bot.sendMessage({
+                        chat_id: message.chat.id,
+                        text: reply
+                    })
+            } catch(error) {
+                console.log(error);
+                bot.sendMessage({
+                        chat_id: message.chat.id,
+                        text: error
+                    })
+                }
+            }
+
             if(maksut != -1) {
                 try {
                     if (!authentication(message.chat.id)) {throw "Auth error"}
